@@ -1,7 +1,7 @@
 import cv2
 from ultralytics import YOLO
 
-def run_model(model_path="yolo11n.pt"):
+def run_model(model_path="yolo11n.pt", object_num=0, conf_thresh=0.50):
     model = YOLO('yolo11n.pt')
     cap = cv2.VideoCapture(0)
     if not cap.isOpened():
@@ -14,12 +14,13 @@ def run_model(model_path="yolo11n.pt"):
     try:
         while True:
             succcess, frame = cap.read()
-            frame = cv2.flip(frame, 1)
             if not succcess:
                 break
-            results = model(frame, stream=True, device='mps')
+            results = model(frame, stream=True, device='mps', classes=[object_num], conf=conf_thresh)
             for r in results:
+                boxes = r.boxes
                 frame = r.plot()
+
             cv2.imshow('YOLOv11n Detection', frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
@@ -33,4 +34,4 @@ def run_model(model_path="yolo11n.pt"):
 
 
 if __name__ == "__main__":
-    run_model()
+    run_model(object_num=67)
