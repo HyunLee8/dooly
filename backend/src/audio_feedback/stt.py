@@ -31,7 +31,7 @@ def transcribe_audio():
         print("Your said: ", user_text)
         return user_text
     except Exception as e:
-        print("Error during transcription: ", str(e))
+        print("Error during the transcription: ", str(e))
         return None
     
     finally:
