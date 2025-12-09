@@ -10,7 +10,7 @@ from threading import Thread, Lock
 from queue import Queue, Empty
 from dataclasses import dataclass
 
-from orbslam3_wrapper import ORBSLAM3VIO, IMUMeasurement, Pose, CameraIntrinsics, TrackingStatus
+from .orbslam3_wrapper import ORBSLAM3VIO, IMUMeasurement, Pose, CameraIntrinsics, TrackingStatus
 
 
 @dataclass

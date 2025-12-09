@@ -209,7 +209,7 @@ class TelloController:
         """Get raw Tello state"""
         return self.tello.get_state()
     
-    def get_slam_pose(self) -> Tuple[Optional, Optional]:
+    def get_slam_pose(self) -> Tuple[Optional[any], Optional[any]]:
         """Get SLAM pose and tracking status"""
         if self.slam:
             return self.slam.get_pose()
