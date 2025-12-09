@@ -1,0 +1,19 @@
+# Camera and IMU Calibration
+
+## Camera Intrinsics (cam0 and cam1)
+- Resolution: 640×480
+- Focal length: fx=500, fy=500
+- Principal point: cx=320, cy=240
+- Distortion: k1=0, k2=0, p1=0, p2=0
+
+## Stereo Extrinsics
+- Baseline: 0.12 m
+- cam1 is 0.12m to the right of cam0
+
+## IMU-Camera Extrinsics
+- IMU and cameras share the same coordinate frame
+- No rotation or translation offset
+
+## Coordinate Frames
+- World: X-forward, Y-left, Z-up
+- Body/IMU/Camera: X-forward, Y-left, Z-up

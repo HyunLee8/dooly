@@ -1,0 +1,65 @@
+
+VISUAL-INERTIAL DATASET SUMMARY
+============================================================
+
+DATASET CHARACTERISTICS
+Duration: 30.0 seconds
+Indoor flight with turns, altitude changes, and rotations
+
+STEREO CAMERAS
+  Frame rate: 20 Hz
+  Resolution: 640×480 pixels
+  Total frames per camera: 600
+  Stereo baseline: 0.12 m
+  Format: PNG images
+  Sample images generated: 10 pairs
+
+IMU SENSOR
+  Sample rate: 200 Hz
+  Total samples: 6000
+
+  Accelerometer:
+    Noise density: 0.01 m/s²/√Hz
+    Bias random walk: 0.0002 m/s³/√Hz
+    Initial bias: [ 0.05 -0.03  0.08]
+
+  Gyroscope:
+    Noise density: 0.0002 rad/s/√Hz
+    Bias random walk: 4e-06 rad/s²/√Hz
+    Initial bias: [ 0.001  -0.002   0.0015]
+
+GROUND TRUTH
+  Sample rate: 200 Hz (synchronized with IMU)
+  Total samples: 6000
+
+  Position range:
+    X: [0.90, 9.10] m
+    Y: [1.85, 8.17] m
+    Z: [0.45, 2.55] m
+
+  Velocity range:
+    Vx: [-1.12, 0.91] m/s
+    Vy: [-0.77, 0.60] m/s
+    Vz: [-0.50, 0.41] m/s
+
+  Orientation range (degrees):
+    Roll: [-8.59, 8.59]°
+    Pitch: [-5.73, 5.73]°
+    Yaw: [-170.06, 189.85]°
+
+TRAJECTORY STATISTICS
+  Total distance: 26.01 m
+  Average speed: 0.87 m/s
+  Max speed: 1.15 m/s
+  Altitude change: 2.10 m
+
+OUTPUT FILES
+  ✓ /mnt/data/visual_inertial_dataset/imu0/imu_data.csv
+  ✓ /mnt/data/visual_inertial_dataset/ground_truth/ground_truth.csv
+  ✓ /mnt/data/visual_inertial_dataset/cam0/timestamps.csv
+  ✓ /mnt/data/visual_inertial_dataset/cam1/timestamps.csv
+  ✓ /mnt/data/visual_inertial_dataset/README.md
+  ✓ /mnt/data/visual_inertial_dataset/calibration.txt
+  ✓ Sample images in cam0/data/ and cam1/data/
+
+============================================================
