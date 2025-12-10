@@ -1,8 +1,11 @@
 import openai
 import json
+import os
 from .systems_prompt import SYSTEM_PROMPT
 
-client = openai.Client(api_keys='')
+load_dotenv()
+
+client = OpenAI(api_key = os.getenv("OPENAI_API_KEY"))
 
 def get_agent_response(user_req):
     response = client.chat.completions.create(

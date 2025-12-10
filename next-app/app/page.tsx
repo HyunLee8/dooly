@@ -1,4 +1,7 @@
 export default function Home() {
+  //just testing gpt
+  const response = await fetch('')
+
   return (
     <div className="flex flex-col min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
       <div className="gap-5 flex flex-col items-center">
