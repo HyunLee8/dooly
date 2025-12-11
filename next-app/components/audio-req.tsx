@@ -28,7 +28,7 @@ export default function AudioReq() {
 
       const dataArray = new Uint8Array(analyser.frequencyBinCount);
       let silenceStart = Date.now();
-      const SILENCE_THRESHOLD = 0.05;
+      const SILENCE_THRESHOLD = 0.1;
       const SILENCE_DURATION = 2000;
 
       // starts recording

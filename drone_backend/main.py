@@ -6,6 +6,9 @@ from src.audio_feedback.stt import transcribe_audio
 app = Flask(__name__)
 CORS(app)
 
+#PROCESS ROUTE HANDLES BOTH IN ONE GO - MAYBE USE THIS LATER FOR SMT DIFF
+
+"""
 @app.route('/api/agent', methods=['POST'])
 def agent():
     data = request.get_json()
@@ -29,7 +32,7 @@ def speach_to_text():
         return jsonify({'text': text})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
+"""
 
 @app.route('/api/process', methods=['POST'])
 def process_audio():
