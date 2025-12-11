@@ -8,55 +8,59 @@ export default function AudioReq() {
   const [showPrompt, setShowPrompt] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const [audioDetected, setAudioDetected] = useState(false);
-
+  const [currentMessage, setCurrentMessage] = useState('');
+  const [thinking, setThinking] = useState(false);
 
   const handleActivate = async () => {
     setIsActive(true);
     setTimeout(() => setShowPrompt(true), 1000);
-  
+    setCurrentMessage('How may I assist you today?');
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-  
+
       // Setup silence detection
       const audioContext = new AudioContext();
       const analyser = audioContext.createAnalyser();
       const microphone = audioContext.createMediaStreamSource(stream);
       analyser.fftSize = 256;
       microphone.connect(analyser);
-  
+
       const dataArray = new Uint8Array(analyser.frequencyBinCount);
       let silenceStart = Date.now();
       const SILENCE_THRESHOLD = 0.05;
       const SILENCE_DURATION = 2000;
-  
-      // Start recording
+
+      // starts recording
       const recorder = new MediaRecorder(stream);
       const chunks: Blob[] = [];
-  
+
       recorder.ondataavailable = (e) => chunks.push(e.data);
-  
+
       recorder.onstop = async () => {
         const audioBlob = new Blob(chunks, { type: 'audio/webm' });
+        setCurrentMessage('Processing audio...');
         const formData = new FormData();
         formData.append('audio', audioBlob, 'recording.webm');
-  
-        const response = await fetch('http://localhost:5000/api/stt', {
+
+        const response = await fetch('http://localhost:5000/api/process', {
           method: 'POST',
           body: formData,
         });
-  
+
         const data = await response.json();
+        setThinking(true);
+        setCurrentMessage(data.message);
         audioContext.close();
       };
-  
+
       recorder.start();
       setMediaRecorder(recorder);
-  
-      // Check for silence
+
       const checkSilence = () => {
         analyser.getByteFrequencyData(dataArray);
         const average = dataArray.reduce((a, b) => a + b) / dataArray.length / 255;
-  
+
         if (average < SILENCE_THRESHOLD) {
           setAudioDetected(false);
           if (Date.now() - silenceStart > SILENCE_DURATION) {
@@ -65,14 +69,15 @@ export default function AudioReq() {
           }
         } else {
           setAudioDetected(true);
+          setCurrentMessage('Listening...');
           silenceStart = Date.now();
         }
-  
+
         requestAnimationFrame(checkSilence);
       };
-  
+
       checkSilence();
-  
+
     } catch (err) {
       console.error("Microphone access denied:", err);
     }
@@ -80,7 +85,7 @@ export default function AudioReq() {
 
   return (
     <div className="gap-5 flex flex-col items-center">
-      {showPrompt && mediaRecorder?.state === 'recording' && (
+      {showPrompt && isActive && (
         <p className="fixed text-xl top-4 right-4">
           {audioDetected ? (
             <span className="text-green-500">● audio detected</span>
@@ -91,10 +96,11 @@ export default function AudioReq() {
       )}
       <div className="mt-10" style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
         <Orb
+          key={thinking ? 'thinking' : 'idle'}
           hoverIntensity={1.0}
           rotateOnHover={true}
           hue={0}
-          forceHoverState={false}
+          forceHoverState={thinking}
         />
       </div>
       <div className="z-10 text-center relative">
@@ -108,7 +114,8 @@ export default function AudioReq() {
         {showPrompt && (
           <h2 className="min-w-max text-3xl absolute top-1/2 left-1/2 -translate-x-1/2 animate-fade-in">
             <TextType
-              text={["How may I assist you today?"]}
+              key={currentMessage}
+              text={[currentMessage]}
               typingSpeed={75}
               pauseDuration={1500}
               showCursor={true}

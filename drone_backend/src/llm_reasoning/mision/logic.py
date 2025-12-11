@@ -17,4 +17,4 @@ def get_agent_response(user_req):
         response_format={"type": "json_object"}
     )
     data = json.loads(response.choices[0].message.content)
-    return data["class_ids"]
+    return data["class_ids"], data["message"]

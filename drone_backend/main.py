@@ -10,22 +10,16 @@ CORS(app)
 def agent():
     data = request.get_json()
     user_req = data.get('user_req')
-    
-    if not user_req:
-        return jsonify({"error": "user_req is required"}), 400
-    
     try:
-        class_ids = get_agent_response(user_req)
-        return jsonify({'class_ids': class_ids})
+        class_ids, message = get_agent_response(user_req) 
+        return jsonify({'class_ids': class_ids,
+                        'message': message})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
 @app.route('/api/stt', methods=['POST'])
 def speach_to_text():
-    if 'audio_file' not in request.files:
-        return jsonify({"error": "audio_file is required"}), 400
-
     audio_file = request.files['audio_file']
 
     try:
@@ -35,6 +29,16 @@ def speach_to_text():
         return jsonify({'text': text})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/process', methods=['POST'])
+def process_audio():
+    audio_file = request.files['audio']
+    transcription = transcribe_audio(audio_file)
+    if not transcription:
+        return jsonify({'message': 'I didn\'t hear anything. Please try again.'})
+    class_ids, message = get_agent_response(transcription)
+    return jsonify({'transcription': transcription, 'class_ids': class_ids, 'message': message})
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
