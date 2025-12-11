@@ -6,14 +6,86 @@ import TextType from './TextType';
 export default function AudioReq() {
   const [isActive, setIsActive] = useState(false);
   const [showPrompt, setShowPrompt] = useState(false);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const [audioDetected, setAudioDetected] = useState(false);
+
 
   const handleActivate = async () => {
+    console.log('1. Activate clicked'); // Add
     setIsActive(true);
     setTimeout(() => {
       setShowPrompt(true);
     }, 1000);
+  
     try {
-      await navigator.mediaDevices.getUserMedia({ audio: true });
+      console.log('2. Requesting microphone...'); // Add
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      console.log('3. Microphone granted'); // Add
+  
+      // Setup silence detection
+      const audioContext = new AudioContext();
+      const analyser = audioContext.createAnalyser();
+      const microphone = audioContext.createMediaStreamSource(stream);
+      analyser.fftSize = 256;
+      microphone.connect(analyser);
+      console.log('4. Audio context setup'); // Add
+  
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      let silenceStart = Date.now();
+      const SILENCE_THRESHOLD = 0.05;
+      const SILENCE_DURATION = 2000;
+  
+      // Start recording
+      const recorder = new MediaRecorder(stream);
+      const chunks: Blob[] = [];
+  
+      recorder.ondataavailable = (e) => chunks.push(e.data);
+  
+      recorder.onstop = async () => {
+        const audioBlob = new Blob(chunks, { type: 'audio/webm' });
+  
+        const formData = new FormData();
+        formData.append('audio', audioBlob, 'recording.webm');
+  
+        const response = await fetch('http://localhost:5000/api/stt', {
+          method: 'POST',
+          body: formData,
+        });
+  
+        const data = await response.json();
+        console.log('Transcription:', data.text);
+  
+        audioContext.close();
+      };
+  
+      recorder.start();
+      setMediaRecorder(recorder);
+      console.log('5. Recording started'); // Add
+  
+      // Check for silence
+      const checkSilence = () => {
+        console.log('checkSilence running'); // Add
+        analyser.getByteFrequencyData(dataArray);
+        const average = dataArray.reduce((a, b) => a + b) / dataArray.length / 255;
+        console.log('Audio level:', average.toFixed(3));
+  
+        if (average < SILENCE_THRESHOLD) {
+          setAudioDetected(false);
+          if (Date.now() - silenceStart > SILENCE_DURATION) {
+            recorder.stop();
+            return;
+          }
+        } else {
+          setAudioDetected(true);
+          silenceStart = Date.now();
+        }
+  
+        requestAnimationFrame(checkSilence);
+      };
+  
+      console.log('6. Starting checkSilence'); // Add
+      checkSilence();
+  
     } catch (err) {
       console.error("Microphone access denied:", err);
     }
@@ -21,6 +93,15 @@ export default function AudioReq() {
 
   return (
     <div className="gap-5 flex flex-col items-center">
+      {showPrompt && mediaRecorder?.state === 'recording' && (
+        <p className="fixed text-xl top-4 right-4">
+          {audioDetected ? (
+            <span className="text-green-500">● audio detected</span>
+          ) : (
+            <span className="text-red-500">● no audio detected</span>
+          )}
+        </p>
+      )}
       <div className="mt-10" style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
         <Orb
           hoverIntensity={1.0}
@@ -37,7 +118,6 @@ export default function AudioReq() {
             <button onClick={handleActivate} className="p-5 border bg-white hover:bg-black hover:text-white duration-500 z-10">Click here to activate me</button>
           </div>
         </div>
-
         {showPrompt && (
           <h2 className="min-w-max text-3xl absolute top-1/2 left-1/2 -translate-x-1/2 animate-fade-in">
             <TextType

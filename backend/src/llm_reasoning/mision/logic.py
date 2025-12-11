@@ -1,11 +1,11 @@
-import openai
+from openai import OpenAI
 import json
 import os
 from .systems_prompt import SYSTEM_PROMPT
-
+from dotenv import load_dotenv
 load_dotenv()
 
-client = OpenAI(api_key = os.getenv("OPENAI_API_KEY"))
+client = OpenAI(api_key=os.getenv("OPENAI_KEY"))
 
 def get_agent_response(user_req):
     response = client.chat.completions.create(
@@ -13,7 +13,7 @@ def get_agent_response(user_req):
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_req}
-        ]
+        ],
         response_format={"type": "json_object"}
     )
     data = json.loads(response.choices[0].message.content)

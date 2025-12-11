@@ -1,4 +1,4 @@
-CV_AGENT_PROMPT = """
+SYSTEM_PROMPT = """
 You are a Computer Vision architect. Your job is to translate user requests 
 into specific COCO dataset IDs. 
 
