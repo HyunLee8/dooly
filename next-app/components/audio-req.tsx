@@ -11,16 +11,11 @@ export default function AudioReq() {
 
 
   const handleActivate = async () => {
-    console.log('1. Activate clicked'); // Add
     setIsActive(true);
-    setTimeout(() => {
-      setShowPrompt(true);
-    }, 1000);
+    setTimeout(() => setShowPrompt(true), 1000);
   
     try {
-      console.log('2. Requesting microphone...'); // Add
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      console.log('3. Microphone granted'); // Add
   
       // Setup silence detection
       const audioContext = new AudioContext();
@@ -28,7 +23,6 @@ export default function AudioReq() {
       const microphone = audioContext.createMediaStreamSource(stream);
       analyser.fftSize = 256;
       microphone.connect(analyser);
-      console.log('4. Audio context setup'); // Add
   
       const dataArray = new Uint8Array(analyser.frequencyBinCount);
       let silenceStart = Date.now();
@@ -43,7 +37,6 @@ export default function AudioReq() {
   
       recorder.onstop = async () => {
         const audioBlob = new Blob(chunks, { type: 'audio/webm' });
-  
         const formData = new FormData();
         formData.append('audio', audioBlob, 'recording.webm');
   
@@ -53,21 +46,16 @@ export default function AudioReq() {
         });
   
         const data = await response.json();
-        console.log('Transcription:', data.text);
-  
         audioContext.close();
       };
   
       recorder.start();
       setMediaRecorder(recorder);
-      console.log('5. Recording started'); // Add
   
       // Check for silence
       const checkSilence = () => {
-        console.log('checkSilence running'); // Add
         analyser.getByteFrequencyData(dataArray);
         const average = dataArray.reduce((a, b) => a + b) / dataArray.length / 255;
-        console.log('Audio level:', average.toFixed(3));
   
         if (average < SILENCE_THRESHOLD) {
           setAudioDetected(false);
@@ -83,13 +71,12 @@ export default function AudioReq() {
         requestAnimationFrame(checkSilence);
       };
   
-      console.log('6. Starting checkSilence'); // Add
       checkSilence();
   
     } catch (err) {
       console.error("Microphone access denied:", err);
     }
-  }
+  };
 
   return (
     <div className="gap-5 flex flex-col items-center">
