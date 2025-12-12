@@ -1,7 +1,33 @@
+/*
+I sowwy for anyone looking at this code because
+it's absolutely horrendous. I litteraly put everything in one
+component lol. I'll refactor this later I promise.
+*/
+
 'use client'
+
 import { useState } from 'react';
 import Orb from '@/components/Orb';
 import TextType from './TextType';
+
+
+//fix this ugly ass code later
+async function SpeakWithElevenLabs(text: string) {
+    const response = await fetch('/api/speech', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+    });
+
+    const audioBlob = await response.blob();
+    const audioUrl = URL.createObjectURL(audioBlob);
+    
+    const audio = new Audio(audioUrl);
+    await audio.play();
+    
+    // Clean up
+    audio.onended = () => URL.revokeObjectURL(audioUrl);
+}
 
 export default function AudioReq() {
   const [isActive, setIsActive] = useState(false);
@@ -11,25 +37,13 @@ export default function AudioReq() {
   const [currentMessage, setCurrentMessage] = useState('');
   const [thinking, setThinking] = useState(false);
 
-  const speakWithElevenLabs = async (text: string) => {
-    const response = await fetch('/api/tts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text })
-    });
-
-    const audioBlob = await response.blob();
-    const audioUrl = URL.createObjectURL(audioBlob);
-    const audio = new Audio(audioUrl);
-    await audio.play();
-  };
-
   const handleActivate = async () => {
     setIsActive(true);
     setTimeout(() => setShowPrompt(true), 1000);
 
     try {
-      speakWithElevenLabs('How may I assist you today?');
+      SpeakWithElevenLabs('How may I assist you today?');
+      await new Promise(resolve => setTimeout(resolve, 1000));
       setCurrentMessage('How may I assist you today?');
       await new Promise(resolve => setTimeout(resolve, 4000));
 
@@ -44,7 +58,7 @@ export default function AudioReq() {
 
       const dataArray = new Uint8Array(analyser.frequencyBinCount);
       let silenceStart = Date.now();
-      const SILENCE_THRESHOLD = 0.05;
+      const SILENCE_THRESHOLD = 0.15;
       const SILENCE_DURATION = 2000;
 
       // starts recording
@@ -65,8 +79,8 @@ export default function AudioReq() {
 
         const data = await response.json();
         setThinking(true);
-        setCurrentMessage('speaking...');
-        speakWithElevenLabs(data.message);
+        setCurrentMessage('reporting back...');
+        SpeakWithElevenLabs(data.message);
         audioContext.close();
       };
 
