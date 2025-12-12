@@ -11,12 +11,28 @@ export default function AudioReq() {
   const [currentMessage, setCurrentMessage] = useState('');
   const [thinking, setThinking] = useState(false);
 
+  const speakWithElevenLabs = async (text: string) => {
+    const response = await fetch('/api/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text })
+    });
+
+    const audioBlob = await response.blob();
+    const audioUrl = URL.createObjectURL(audioBlob);
+    const audio = new Audio(audioUrl);
+    await audio.play();
+  };
+
   const handleActivate = async () => {
     setIsActive(true);
     setTimeout(() => setShowPrompt(true), 1000);
-    setCurrentMessage('How may I assist you today?');
 
     try {
+      speakWithElevenLabs('How may I assist you today?');
+      setCurrentMessage('How may I assist you today?');
+      await new Promise(resolve => setTimeout(resolve, 4000));
+
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
       // Setup silence detection
@@ -28,13 +44,12 @@ export default function AudioReq() {
 
       const dataArray = new Uint8Array(analyser.frequencyBinCount);
       let silenceStart = Date.now();
-      const SILENCE_THRESHOLD = 0.1;
+      const SILENCE_THRESHOLD = 0.05;
       const SILENCE_DURATION = 2000;
 
       // starts recording
       const recorder = new MediaRecorder(stream);
       const chunks: Blob[] = [];
-
       recorder.ondataavailable = (e) => chunks.push(e.data);
 
       recorder.onstop = async () => {
@@ -50,7 +65,8 @@ export default function AudioReq() {
 
         const data = await response.json();
         setThinking(true);
-        setCurrentMessage(data.message);
+        setCurrentMessage('speaking...');
+        speakWithElevenLabs(data.message);
         audioContext.close();
       };
 
@@ -69,7 +85,6 @@ export default function AudioReq() {
           }
         } else {
           setAudioDetected(true);
-          setCurrentMessage('Listening...');
           silenceStart = Date.now();
         }
 

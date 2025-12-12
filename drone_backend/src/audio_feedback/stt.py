@@ -4,15 +4,13 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-client = OpenAI(api_key = os.getenv("OPENAI_API_KEY"))
+client = OpenAI(api_key = os.getenv("OPENAI_KEY"))
 
 def transcribe_audio(audio_file):
-    print("[Processing...] Transcribing with Whisper...")
-
     try:
-        user_text = client.audio.transcription.create(
+        user_text = client.audio.transcriptions.create(
             model="whisper-1",
-            file = audio_file,
+            file=(audio_file.filename, audio_file.read(), audio_file.content_type),
             response_format="text",
         )
         print("You said:", user_text)

@@ -36,8 +36,12 @@ def speach_to_text():
 
 @app.route('/api/process', methods=['POST'])
 def process_audio():
-    audio_file = request.files['audio']
-    transcription = transcribe_audio(audio_file)
+    if 'audio' in request.files:
+        audio_file = request.files['audio']
+        transcription = transcribe_audio(audio_file)
+    else:
+        data = request.get_json()
+        transcription = data.get('transcription')
     if not transcription:
         return jsonify({'message': 'I didn\'t hear anything. Please try again.'})
     class_ids, message = get_agent_response(transcription)
