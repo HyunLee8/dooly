@@ -145,7 +145,7 @@ export default function AudioReq() {
             <TextType
               key={currentMessage}
               text={[currentMessage]}
-              typingSpeed={75}
+              typingSpeed={50}
               pauseDuration={1500}
               showCursor={true}
               cursorCharacter="_"
