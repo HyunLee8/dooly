@@ -13,26 +13,35 @@ import TextType from './TextType';
 
 //fix this ugly ass code later
 async function SpeakWithElevenLabs(text: string) {
-    const response = await fetch('/api/speech', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text }),
-    });
+  const response = await fetch('/api/speech', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text }),
+  });
 
-    const audioBlob = await response.blob();
-    const audioUrl = URL.createObjectURL(audioBlob);
-    
-    const audio = new Audio(audioUrl);
-    await audio.play();
-    
-    // Clean up
-    audio.onended = () => URL.revokeObjectURL(audioUrl);
+  const audioBlob = await response.blob();
+  const audioUrl = URL.createObjectURL(audioBlob);
+
+  const audio = new Audio(audioUrl);
+
+  return new Promise<void>((resolve, reject) => {
+    audio.onended = () => {
+      URL.revokeObjectURL(audioUrl);
+      resolve();
+    };
+    audio.onerror = (error) => {
+      URL.revokeObjectURL(audioUrl);
+      reject(error); // ← Handle errors
+    };
+    audio.play();
+  })
+
+  await audio.play();
 }
 
 export default function AudioReq() {
   const [isActive, setIsActive] = useState(false);
   const [showPrompt, setShowPrompt] = useState(false);
-  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const [audioDetected, setAudioDetected] = useState(false);
   const [currentMessage, setCurrentMessage] = useState('');
   const [thinking, setThinking] = useState(false);
@@ -42,10 +51,8 @@ export default function AudioReq() {
     setTimeout(() => setShowPrompt(true), 1000);
 
     try {
-      SpeakWithElevenLabs('How may I assist you today?');
-      await new Promise(resolve => setTimeout(resolve, 1000));
       setCurrentMessage('How may I assist you today?');
-      await new Promise(resolve => setTimeout(resolve, 4000));
+      await SpeakWithElevenLabs('How may I assist you today?');
 
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
@@ -55,62 +62,86 @@ export default function AudioReq() {
       const microphone = audioContext.createMediaStreamSource(stream);
       analyser.fftSize = 256;
       microphone.connect(analyser);
-
       const dataArray = new Uint8Array(analyser.frequencyBinCount);
-      let silenceStart = Date.now();
-      const SILENCE_THRESHOLD = 0.15;
-      const SILENCE_DURATION = 2000;
 
-      // starts recording
-      const recorder = new MediaRecorder(stream);
-      const chunks: Blob[] = [];
-      recorder.ondataavailable = (e) => chunks.push(e.data);
-
-      recorder.onstop = async () => {
-        const audioBlob = new Blob(chunks, { type: 'audio/webm' });
-        setCurrentMessage('Processing audio...');
-        const formData = new FormData();
-        formData.append('audio', audioBlob, 'recording.webm');
-
-        const response = await fetch('http://localhost:5000/api/process', {
-          method: 'POST',
-          body: formData,
-        });
-
-        const data = await response.json();
-        setThinking(true);
-        setCurrentMessage('reporting back...');
-        SpeakWithElevenLabs(data.message);
-        audioContext.close();
-      };
-
-      recorder.start();
-      setMediaRecorder(recorder);
-
-      const checkSilence = () => {
-        analyser.getByteFrequencyData(dataArray);
-        const average = dataArray.reduce((a, b) => a + b) / dataArray.length / 255;
-
-        if (average < SILENCE_THRESHOLD) {
-          setAudioDetected(false);
-          if (Date.now() - silenceStart > SILENCE_DURATION) {
-            recorder.stop();
-            return;
-          }
-        } else {
-          setAudioDetected(true);
-          silenceStart = Date.now();
-        }
-
-        requestAnimationFrame(checkSilence);
-      };
-
-      checkSilence();
+      conversationLoop(stream, audioContext, analyser, microphone, dataArray, true);
 
     } catch (err) {
       console.error("Microphone access denied:", err);
     }
   };
+
+  const conversationLoop = async (
+    stream: MediaStream,
+    audioContext: AudioContext,
+    analyser: AnalyserNode,
+    microphone: MediaStreamAudioSourceNode,
+    dataArray: Uint8Array,
+    isFirstLoop: boolean) => {
+
+    if (!isFirstLoop) {
+      setCurrentMessage('Is there anything else I can help you with?');
+      await SpeakWithElevenLabs('Is there anything else I can help you with?');
+    }
+
+    // Adjust this value as needed
+    const SILENCE_THRESHOLD = 0.1;
+    const SILENCE_DURATION = 2000;
+
+    // starts recording
+    const recorder = new MediaRecorder(stream);
+    const chunks: Blob[] = [];
+    recorder.ondataavailable = (e) => chunks.push(e.data);
+
+    // eslint-disable-next-line prefer-const
+    let animationFrameId: number = 0;
+
+    recorder.onstop = async () => {
+      cancelAnimationFrame(animationFrameId);
+
+      const audioBlob = new Blob(chunks, { type: 'audio/webm' });
+      setCurrentMessage('Processing audio...');
+      const formData = new FormData();
+      formData.append('audio', audioBlob, 'recording.webm');
+
+      const response = await fetch('http://localhost:5000/api/process', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+      setThinking(true);
+
+      setCurrentMessage('reporting back...');
+      await SpeakWithElevenLabs(data.message);
+
+      conversationLoop(stream, audioContext, analyser, microphone, dataArray, isFirstLoop=false);
+    };
+
+    recorder.start();
+    // eslint-disable-next-line react-hooks/purity
+    let silenceStart = Date.now();
+
+    const checkSilence = () => {
+      analyser.getByteFrequencyData(dataArray);
+      const average = dataArray.reduce((a, b) => a + b) / dataArray.length / 255;
+
+      if (average < SILENCE_THRESHOLD) {
+        setAudioDetected(false);
+        if (Date.now() - silenceStart > SILENCE_DURATION) {
+          recorder.stop();
+          return;
+        }
+      } else {
+        setAudioDetected(true);
+        silenceStart = Date.now();
+      }
+
+      requestAnimationFrame(checkSilence);
+    };
+
+    checkSilence();
+  }
 
   return (
     <div className="gap-5 flex flex-col items-center">
